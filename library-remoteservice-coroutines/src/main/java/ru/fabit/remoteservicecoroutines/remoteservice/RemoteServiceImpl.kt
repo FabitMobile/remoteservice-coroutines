@@ -1,13 +1,13 @@
 package ru.fabit.remoteservicecoroutines.remoteservice
 
 import android.os.Looper
-import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import org.json.JSONArray
 import org.json.JSONObject
-import retrofit2.*
+import retrofit2.Response
+import retrofit2.Retrofit
 import ru.fabit.error.AuthFailureException
 import ru.fabit.error.NoNetworkConnectionException
 import ru.fabit.error.RemoteServiceError
@@ -16,9 +16,6 @@ import ru.fabit.remoteservicecoroutines.RetrofitApi
 import ru.fabit.remoteservicecoroutines.entities.RequestMethods
 import java.io.IOException
 import java.net.SocketTimeoutException
-import java.util.*
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 class RemoteServiceImpl(
     private val retrofitBuilder: Retrofit.Builder,
@@ -64,10 +61,12 @@ class RemoteServiceImpl(
         relativePath: String,
         params: HashMap<String, Any>,
         headers: Map<String, String>
-    ): JSONObject = suspendCancellableCoroutine { continuation ->
-            if (Looper.getMainLooper() == Looper.myLooper()) throw IllegalThreadStateException()
-            val url = baseUrl.plus(relativePath)
-            val call = when (requestMethod) {
+    ): JSONObject {
+        val jsonObject: JSONObject
+        if (Looper.getMainLooper() == Looper.myLooper()) throw IllegalThreadStateException()
+        val url = baseUrl.plus(relativePath)
+        try {
+            val response = when (requestMethod) {
                 RequestMethods.GET -> api.getObject(url, headers, params)
                 RequestMethods.PUT -> api.putObject(
                     url,
@@ -91,23 +90,12 @@ class RemoteServiceImpl(
                 )
                 else -> throw Throwable("No requestMethod")
             }
-        call.enqueue(object : Callback<ResponseBody>{
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                try {
-                    val jsonObject = mapResponseToJSONObject(response, relativePath)
-                    continuation.resume(jsonObject)
-                } catch (t: Throwable) {
-                    val throwable = onError(t)
-                    continuation.resumeWithException(throwable)
-                }
-            }
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                val throwable = onError(t)
-                continuation.resumeWithException(throwable)
-            }
-
-        })
-        continuation.invokeOnCancellation { call.cancel() }
+            jsonObject = mapResponseToJSONObject(response, relativePath)
+        } catch (t: Throwable) {
+            val throwable = onError(t)
+            throw throwable
+        }
+        return jsonObject
     }
 
     private fun getRequestBody(params: HashMap<String, Any>?): RequestBody {
