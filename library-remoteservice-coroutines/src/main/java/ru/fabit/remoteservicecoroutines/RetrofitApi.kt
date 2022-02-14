@@ -2,43 +2,43 @@ package ru.fabit.remoteservicecoroutines
 
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
-import retrofit2.Call
+import retrofit2.Response
 import retrofit2.http.*
 
 interface RetrofitApi {
 
     @GET
-    fun getObject(
+    suspend fun getObject(
         @Url url: String,
         @HeaderMap headers: Map<String, String>,
         @QueryMap queries: Map<String, @JvmSuppressWildcards Any>
-    ): Call<ResponseBody>
+    ): Response<ResponseBody>
 
     @PUT
-    fun putObject(
+    suspend fun putObject(
         @Url url: String,
         @HeaderMap headers: Map<String, String>,
         @Body body: RequestBody
-    ): Call<ResponseBody>
+    ): Response<ResponseBody>
 
     @POST
-    fun postObject(
+    suspend fun postObject(
         @Url url: String,
         @HeaderMap headers: Map<String, String>,
         @Body body: RequestBody
-    ): Call<ResponseBody>
+    ): Response<ResponseBody>
 
     @DELETE
-    fun deleteObject(
+    suspend fun deleteObject(
         @Url url: String,
         @HeaderMap headers: Map<String, String>,
         @QueryMap queries: Map<String, @JvmSuppressWildcards Any>
-    ): Call<ResponseBody>
+    ): Response<ResponseBody>
 
     @PATCH
-    fun patchObject(
+    suspend fun patchObject(
         @Url url: String,
         @HeaderMap headers: Map<String, String>,
         @Body body: RequestBody
-    ): Call<ResponseBody>
+    ): Response<ResponseBody>
 }
