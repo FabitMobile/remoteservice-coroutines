@@ -1,8 +1,10 @@
 package ru.fabit.remoteservicecoroutines.remoteservice
 
 import android.os.Looper
-import okhttp3.MediaType
+import kotlinx.coroutines.CancellationException
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.ResponseBody
 import org.json.JSONArray
 import org.json.JSONObject
@@ -33,7 +35,7 @@ class RemoteServiceImpl(
     override suspend fun getRemoteJson(
         requestMethod: Int,
         relativePath: String,
-        params: HashMap<String, Any>,
+        params: Map<String, Any>,
         headers: Map<String, String>
     ): JSONObject {
         return getRemoteJsonInner(
@@ -49,17 +51,21 @@ class RemoteServiceImpl(
         requestMethod: Int,
         baseUrl: String,
         relativePath: String,
-        params: HashMap<String, Any>,
+        params: Map<String, Any>,
         headers: Map<String, String>
     ): JSONObject {
         return getRemoteJsonInner(requestMethod, baseUrl, relativePath, params, headers)
+    }
+
+    override fun getConfig(): RemoteServiceConfig {
+        return remoteServiceConfig
     }
 
     private suspend fun getRemoteJsonInner(
         requestMethod: Int,
         baseUrl: String,
         relativePath: String,
-        params: HashMap<String, Any>,
+        params: Map<String, Any>,
         headers: Map<String, String>
     ): JSONObject {
         val jsonObject: JSONObject
@@ -98,18 +104,14 @@ class RemoteServiceImpl(
         return jsonObject
     }
 
-    private fun getRequestBody(params: HashMap<String, Any>?): RequestBody {
+    private fun getRequestBody(params: Map<String, Any>?): RequestBody {
         val wrappedParams = if (params != null) {
-            wrap(params).toMap()
+            wrap(params)
         } else {
             mapOf<Any, Any>()
         }
         val jsonObject = JSONObject(wrappedParams)
-
-        return RequestBody.create(
-            MediaType.parse("application/json; charset=utf-8"),
-            jsonObject.toString()
-        )
+        return jsonObject.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
     }
 
     private fun onError(t: Throwable): Throwable {
@@ -117,6 +119,9 @@ class RemoteServiceImpl(
             is SocketTimeoutException -> RequestTimeoutError(t.message)
             is IllegalThreadStateException -> IllegalThreadStateException(t.message)
             is IOException -> NoNetworkConnectionException(t.message)
+            is AuthFailureException -> t
+            is RemoteServiceError -> t
+            is CancellationException -> t
             else -> RuntimeException(t.message)
         }
     }
@@ -180,10 +185,10 @@ class RemoteServiceImpl(
         return errorInfo
     }
 
-    private fun wrap(map: HashMap<String, Any>): HashMap<String, Any> {
+    private fun wrap(map: Map<String, Any>): Map<String, Any> {
         val wrapped = hashMapOf<String, Any>()
         map.entries.forEach { entry ->
-            wrapped.put(entry.key, wrap(entry.value))
+            wrapped[entry.key] = wrap(entry.value)
         }
         return wrapped
     }
@@ -193,9 +198,9 @@ class RemoteServiceImpl(
             JSONObject.NULL -> any
             is JSONArray, is JSONObject -> any
             is Collection<*> -> wrapCollection(any)
-            any.javaClass.isArray -> JSONArray(any)
             is Map<*, *> -> wrapMap(any)
             is Boolean, is Byte, is Char, is Double, is Float, is Int, is Long, is Short, is String -> any
+            any.javaClass.isArray -> JSONArray(any)
             else -> any.toString()
         }
     }
@@ -215,7 +220,7 @@ class RemoteServiceImpl(
         map.entries.forEach { entry ->
             val value = entry.value
             if (value != null) {
-                wrapped.put(entry.key as String, wrap(value))
+                wrapped[entry.key as String] = wrap(value)
             }
         }
         return JSONObject(wrapped as Map<*, *>)
