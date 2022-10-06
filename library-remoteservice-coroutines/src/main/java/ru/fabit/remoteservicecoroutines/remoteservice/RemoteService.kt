@@ -7,7 +7,7 @@ interface RemoteService {
     suspend fun getRemoteJson(
         requestMethod: Int,
         relativePath: String,
-        params: HashMap<String, Any>,
+        params: Map<String, Any>,
         headers: Map<String, String>
     ): JSONObject
 
@@ -15,7 +15,9 @@ interface RemoteService {
         requestMethod: Int,
         baseUrl: String,
         relativePath: String,
-        params: HashMap<String, Any>,
+        params: Map<String, Any>,
         headers: Map<String, String>
     ): JSONObject
+
+    fun getConfig(): RemoteServiceConfig
 }

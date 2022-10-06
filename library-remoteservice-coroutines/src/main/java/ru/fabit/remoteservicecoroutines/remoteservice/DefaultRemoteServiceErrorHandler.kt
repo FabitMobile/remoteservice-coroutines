@@ -1,40 +1,34 @@
-package ru.fabit.remoteservicecoroutines.remoteservice;
+package ru.fabit.remoteservicecoroutines.remoteservice
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.json.JSONException
+import org.json.JSONObject
 
-
-public class DefaultRemoteServiceErrorHandler implements RemoteServiceErrorHandler {
-
-    @Override
-    public String getUserMessage(JSONObject jsonObject) {
-        String userMessage = "";
+class DefaultRemoteServiceErrorHandler : RemoteServiceErrorHandler {
+    override fun getUserMessage(jsonObject: JSONObject): String {
+        var userMessage = ""
         try {
-            userMessage = jsonObject.getString("userMessage");
-        } catch (JSONException e) {
-            e.printStackTrace();
+            userMessage = jsonObject.getString("userMessage")
+        } catch (e: JSONException) {
+            e.printStackTrace()
         }
-        return userMessage;
+        return userMessage
     }
 
-    @Override
-    public String getErrorName(JSONObject jsonObject) {
-        String errorName = "";
+    override fun getErrorName(jsonObject: JSONObject): String {
+        var errorName = ""
         try {
-            errorName = jsonObject.getString("errorName");
-        } catch (JSONException e) {
-            e.printStackTrace();
+            errorName = jsonObject.getString("errorName")
+        } catch (e: JSONException) {
+            e.printStackTrace()
         }
-        return errorName;
+        return errorName
     }
 
-    @Override
-    public String getCode(JSONObject jsonObject) {
-        return "";
+    override fun getCode(jsonObject: JSONObject): String {
+        return ""
     }
 
-    @Override
-    public void handleError(Throwable throwable, String requestPath) {
+    override fun handleError(throwable: Throwable, requestPath: String?) {
         //do nothing
     }
 }

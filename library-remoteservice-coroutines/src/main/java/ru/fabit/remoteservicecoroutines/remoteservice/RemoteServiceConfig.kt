@@ -1,22 +1,10 @@
-package ru.fabit.remoteservicecoroutines.remoteservice;
+package ru.fabit.remoteservicecoroutines.remoteservice
 
-import java.util.Map;
-
-
-public interface RemoteServiceConfig {
-
-    String getBaseUrl();
-
-    String getUploadServerUrl();
-
-    Map<String, String> getDefaultHeaders();
-
-    long getConnectTimeoutMillis();
-
-    long getReadTimeoutMillis();
-
-    boolean isLogEnabled();
-
-    int getMaxRetries();
-
+interface RemoteServiceConfig {
+    val baseUrl: String
+    val uploadServerUrl: String
+    val defaultHeaders: Map<String, String>
+    val connectTimeoutMillis: Long
+    val readTimeoutMillis: Long
+    val maxRetries: Int
 }
