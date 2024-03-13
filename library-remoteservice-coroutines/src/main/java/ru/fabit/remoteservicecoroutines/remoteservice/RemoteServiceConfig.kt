@@ -7,4 +7,5 @@ interface RemoteServiceConfig {
     val connectTimeoutMillis: Long
     val readTimeoutMillis: Long
     val maxRetries: Int
+    val isLogEnabled: Boolean
 }

@@ -2,8 +2,11 @@ package ru.fabit.remoteservicecoroutines.factories
 
 import com.ihsanbal.logging.Level
 import com.ihsanbal.logging.LoggingInterceptor
-import okhttp3.*
+import okhttp3.Authenticator
+import okhttp3.Headers
 import okhttp3.Headers.Companion.toHeaders
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
 import ru.fabit.remoteservicecoroutines.remoteservice.RemoteServiceConfig
 import java.util.concurrent.TimeUnit
 
@@ -20,7 +23,8 @@ class ClientFactory {
         addInterceptors(
             builder,
             authenticator,
-            remoteServiceConfig.defaultHeaders.toHeaders()
+            remoteServiceConfig.defaultHeaders.toHeaders(),
+            remoteServiceConfig.isLogEnabled
         )
         return builder.build()
     }
@@ -38,11 +42,14 @@ class ClientFactory {
     private fun addInterceptors(
         builder: OkHttpClient.Builder,
         authenticator: Authenticator,
-        headers: Headers
+        headers: Headers,
+        isLogEnabled: Boolean
     ) {
         with(builder) {
             authenticator(authenticator)
-            addInterceptor(getLoggingInterceptor())
+            if (isLogEnabled) {
+                addInterceptor(getLoggingInterceptor())
+            }
             addInterceptor(getInterceptors(headers))
         }
     }
