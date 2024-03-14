@@ -3,15 +3,13 @@ plugins {
     id("kotlin-android")
 }
 
-group = 'com.github.FabitMobile'
+group = "com.github.FabitMobile"
 
 android {
     namespace = "ru.fabit.remoteservicecoroutines"
     compileSdk = 33
     defaultConfig {
         minSdk = 26
-        versionCode = 2
-        versionName = "1.1.0"
         resourceConfigurations += mutableSetOf("en", "ru")
     }
 
