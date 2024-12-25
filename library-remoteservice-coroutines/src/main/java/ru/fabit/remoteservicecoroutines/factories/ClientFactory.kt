@@ -10,68 +10,58 @@ import okhttp3.OkHttpClient
 import ru.fabit.remoteservicecoroutines.remoteservice.RemoteServiceConfig
 import java.util.concurrent.TimeUnit
 
-class ClientFactory {
+open class ClientFactory {
 
-    fun create(
+    open fun create(
         remoteServiceConfig: RemoteServiceConfig,
-        authenticator: Authenticator
+        authenticator: Authenticator? = null,
+        vararg interceptors: Interceptor
     ): OkHttpClient {
-        val builder = getPreconfiguredClientBuilder(
-            remoteServiceConfig.connectTimeoutMillis,
-            remoteServiceConfig.readTimeoutMillis
+        val builder = OkHttpClient.Builder()
+        builder.setTimeouts(
+            connectTimeoutMillis = remoteServiceConfig.connectTimeoutMillis,
+            readTimeoutMillis = remoteServiceConfig.readTimeoutMillis
         )
-        addInterceptors(
-            builder,
-            authenticator,
-            remoteServiceConfig.defaultHeaders.toHeaders(),
-            remoteServiceConfig.isLogEnabled
-        )
+        if (remoteServiceConfig.isLogEnabled)
+            getLoggingInterceptor()?.let { builder.addInterceptor(it) }
+
+        getDefaultHeadersInterceptor(remoteServiceConfig.defaultHeaders.toHeaders())?.let {
+            builder.addInterceptor(it)
+        }
+        interceptors.forEach(builder::addInterceptor)
+
+        authenticator?.let { builder.authenticator(it) }
         return builder.build()
     }
 
-    private fun getPreconfiguredClientBuilder(
+    protected open fun OkHttpClient.Builder.setTimeouts(
         connectTimeoutMillis: Long,
         readTimeoutMillis: Long
     ): OkHttpClient.Builder {
-        return OkHttpClient.Builder().apply {
+        return this.apply {
             connectTimeout(connectTimeoutMillis, TimeUnit.MILLISECONDS)
             readTimeout(readTimeoutMillis, TimeUnit.MILLISECONDS)
         }
     }
 
-    private fun addInterceptors(
-        builder: OkHttpClient.Builder,
-        authenticator: Authenticator,
-        headers: Headers,
-        isLogEnabled: Boolean
-    ) {
-        with(builder) {
-            authenticator(authenticator)
-            if (isLogEnabled) {
-                addInterceptor(getLoggingInterceptor())
+    protected open fun getDefaultHeadersInterceptor(headers: Headers): Interceptor? =
+        Interceptor { chain ->
+            var request = chain.request()
+            val requestBuilder = request.newBuilder()
+            val includedHeaders = request.headers
+            val newHeaders = includedHeaders.newBuilder()
+            for (key in headers.names()) {
+                if (includedHeaders[key] == null) {
+                    newHeaders.add(key, headers[key] ?: "")
+                }
             }
-            addInterceptor(getInterceptors(headers))
+            request = requestBuilder
+                .headers(newHeaders.build())
+                .build()
+            chain.proceed(request)
         }
-    }
 
-    private fun getInterceptors(headers: Headers) = Interceptor { chain ->
-        var request = chain.request()
-        val requestBuilder = request.newBuilder()
-        val includedHeaders = request.headers
-        val newHeaders = includedHeaders.newBuilder()
-        for (key in headers.names()) {
-            if (includedHeaders.get(key) == null) {
-                newHeaders.add(key, headers.get(key) ?: "")
-            }
-        }
-        request = requestBuilder
-            .headers(newHeaders.build())
-            .build()
-        chain.proceed(request)
-    }
-
-
-    private fun getLoggingInterceptor(): LoggingInterceptor {
+    protected open fun getLoggingInterceptor(): LoggingInterceptor? {
         return LoggingInterceptor.Builder()
             .setLevel(Level.BASIC)
             .request("Request")
